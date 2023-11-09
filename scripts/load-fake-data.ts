@@ -1,19 +1,12 @@
-import { Client } from "pg";
-import {loadEnvConfig} from '@next/env';
-import {faker} from '@faker-js/faker'
-const projectDir = process.cwd(); //현재 dir 경로 가져오기 위함
-loadEnvConfig(projectDir); //env 파일 가져오기 위함
+import {faker} from '@faker-js/faker';
+import bcrypt from "bcrypt";
+import { getClient } from "@/db";
+
 
 async function loadFakeData(numUsers: number = 10){
   console.log(`excuting loaded fake data ${numUsers} users`);
 
-  const client = new Client({
-    user:process.env.POSTGRES_USER,
-    host:process.env.POSTGRES_HOST,
-    database:process.env.POSTGRES_NAME,
-    password:process.env.POSTGRES_PASSWORD,
-    port:parseInt(process.env.POSTGRES_PORT!) //!는 해당 표현식이 null 또는 undefined가 아니라고 컴파일러에 전달
-  });
+  const client = await getClient();
   //트랜잭션(Transaction)은 데이터베이스에서 일련의 작업을 수행하는 논리적인 작업 단위를 의미
   await client.connect();
   console.log('conn 시작 ', )
@@ -21,7 +14,9 @@ async function loadFakeData(numUsers: number = 10){
       await client.query("begin") // 트랜잭션을 시작하고 데이터베이스 연산을 원자적으로 처리
 
       for(let i=0;i<numUsers;i++){
-        await client.query("insert into public.users (username,password,avatar) values ($1,$2,$3)",[faker.internet.userName(),"password",faker.image.avatar()])
+        const saltRounds = 10;
+        const hash = await bcrypt.hash("strings123", saltRounds);
+        await client.query("insert into public.users (username,password,avatar) values ($1,$2,$3)",[faker.internet.userName(),hash,faker.image.avatar()])
       }
       const res = await client.query("select id from public.users order by created_at desc limit $1",[numUsers])
       console.log(res.rows);
