@@ -44,10 +44,8 @@ async function loadFakeData(numUsers: number = 10){
       await client.query("commit") // 트랜잭션에 수행된 작업을 적용
     }catch(error){
       await client.query("rollback"); //쿼리를 실행하여 트랜잭션을 롤백
-    console.log('conn 에러 ', )
     }finally{
       await client.end()
-      console.log('conn 종료 ', )
     }
 }
 const numUsers = parseInt(process.argv[2])||10;
